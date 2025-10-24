@@ -1,0 +1,223 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Manrope", sans-serif;
+}
+
+h1,
+h2,
+h3 {
+    font-family: "Anton", sans-serif;
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.hero {
+    min-height: 100vh;
+    width: 100%;
+    background-image: url("/assets/main_img.webp");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    position: relative;
+}
+
+/* Optional: dark overlay effect for better text contrast */
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 0;
+}
+
+.hero>* {
+    position: relative;
+    z-index: 1;
+    /* ensures text appears above overlay */
+}
+
+.hero .overlay {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: #fff;
+    padding: 0 1rem;
+}
+
+.logo {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    color: white;
+    left: 30px;
+    top: 30px;
+}
+
+.logo h2 {
+    font-size: 20px;
+    letter-spacing: 2px;
+}
+
+.logo img {
+    width: 25px;
+    height: 25px;
+}
+
+.title {
+    font-size: 1.8rem;
+    max-width: 700px;
+    margin-bottom: 30px;
+    line-height: 1.4;
+    text-transform: uppercase;
+    color: #FFD15B;
+    letter-spacing: 2px;
+}
+
+.input-container {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    height: 50px;
+}
+
+.input-container input {
+    background-color: white;
+    width: 100%;
+    border-radius: 10px;
+    padding: 0px 25px;
+    border: none;
+    font-size: 13px;
+    outline: none;
+}
+
+.input-container button {
+    position: absolute;
+    right: 15px;
+    padding: 8px;
+    background-color: black;
+    font-size: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.results {
+    padding: 40px;
+    background: white;
+    color: black;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+
+}
+
+.recipe-card {
+    width: 360px;
+    background-color: #fff;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    font-family: "Manrope", sans-serif;
+    margin: 20px auto;
+}
+
+.recipe-img {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.recipe-img img {
+    object-fit: cover;
+    width: 100%;
+    height: 200px;
+    border-radius: 12px 12px 0 0;
+}
+
+.badge {
+    position: absolute;
+    top: 12px;
+    background-color: #FFD15B;
+    color: #000;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 50px;
+}
+
+.badge.time {
+    right: 12px;
+}
+
+/* Content section */
+.recipe-content {
+    padding: 20px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+}
+
+.recipe-title {
+    font-family: "Anton", sans-serif;
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+}
+
+.section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #7a7a7a;
+    text-transform: uppercase;
+    margin: 15px 0 8px;
+}
+
+.recipe-description {
+    font-size: 0.9rem;
+    color: #333;
+    line-height: 1.5;
+}
+
+/* Ingredients grid */
+.ingredients {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 16px;
+    font-size: 14px;
+    color: #444;
+}
+
+.ingredients div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ingredients strong {
+    font-weight: 600;
+}

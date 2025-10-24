@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Recherche Recettes</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style/index.css" />
+  </head>
+  <body>
+    <div class="hero">
+      <div class="logo">
+        <h2>LES PETITS PLATS</h2>
+        <img src="/assets/logo_point.webp" alt="logo point" />
+      </div>
+      <div class="overlay">
+        <h1 class="title">
+          Cherchez parmi plus de 1500 recettes <br />
+          du quotidien, simples et délicieuses
+        </h1>
+        <div class="input-container">
+          <input
+            type="text"
+            id="search"
+            class="main-input"
+            placeholder="Rechercher une recette..."
+          />
+          <button>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 28 29"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="10" cy="10.4219" r="9.5" stroke="white" />
+              <line
+                x1="18.3536"
+                y1="19.0683"
+                x2="27.3536"
+                y2="28.0683"
+                stroke="white"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="results" class="results"></div>
+
+    <script type="module" src="script/index.js"></script>
+  </body>
+</html>
