@@ -48,8 +48,47 @@
         </div>
       </div>
     </div>
+    <div class="filters">
+      <div class="filter" id="filter-ingredients">
+        <button class="filter-toggle">Ingrédients ▾</button>
+        <div class="filter-dropdown">
+          <input
+            type="text"
+            class="filter-search"
+            placeholder="Rechercher un ingrédient..."
+          />
+          <ul id="ingredients-list" class="filter-list"></ul>
+        </div>
+      </div>
+
+      <div class="filter" id="filter-appliances">
+        <button class="filter-toggle">Appareils ▾</button>
+        <div class="filter-dropdown">
+          <input
+            type="text"
+            class="filter-search"
+            placeholder="Rechercher un appareil..."
+          />
+          <ul id="appliances-list" class="filter-list"></ul>
+        </div>
+      </div>
+
+      <div class="filter" id="filter-ustensils">
+        <button class="filter-toggle">Ustensiles ▾</button>
+        <div class="filter-dropdown">
+          <input
+            type="text"
+            class="filter-search"
+            placeholder="Rechercher un ustensile..."
+          />
+          <ul id="ustensils-list" class="filter-list"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="tags-container" class="tags-container"></div>
     <div id="results" class="results"></div>
 
-    <script type="module" src="script/index.js"></script>
+    <script type="module" src="script/script.js"></script>
   </body>
 </html>
