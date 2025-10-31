@@ -147,10 +147,11 @@ function removeTag(value) {
 }
 
 // Système de filtrage complet
+let queryTimeout;
 function filterWithTags() {
   let filtered = [...recipes];
 
-  // Filtrage par tags
+  // --- Filtrage par tags (immédiat)
   if (selectedTags.length > 0) {
     selectedTags.forEach((tag) => {
       if (tag.type === "ingredient") {
@@ -173,19 +174,24 @@ function filterWithTags() {
     });
   }
 
-  // Filtrage par champ principal
-  const query = searchInput.value.trim().toLowerCase();
-  if (query.length >= 3) {
-    filtered = filtered.filter(
-      (r) =>
-        r.name.toLowerCase().includes(query) ||
-        r.description.toLowerCase().includes(query) ||
-        r.ingredients.some((i) => i.ingredient.toLowerCase().includes(query))
-    );
-  }
+  // Filtrage par champ principal (avec délai)
+  clearTimeout(queryTimeout);
+  queryTimeout = setTimeout(() => {
+    const query = searchInput.value.trim().toLowerCase();
+    let filteredQuery = [...filtered];
 
-  displayRecipes(filtered, query);
-  updateAdvancedFilters(filtered);
+    if (query.length >= 3) {
+      filteredQuery = filteredQuery.filter(
+        (r) =>
+          r.name.toLowerCase().includes(query) ||
+          r.description.toLowerCase().includes(query) ||
+          r.ingredients.some((i) => i.ingredient.toLowerCase().includes(query))
+      );
+    }
+
+    displayRecipes(filteredQuery, query);
+    updateAdvancedFilters(filteredQuery);
+  }, 500); // délai (en millisecondes)
 }
 
 // recherche principale
