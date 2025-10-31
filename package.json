@@ -1,0 +1,25 @@
+{
+  "name": "les_petits_plats",
+  "version": "1.0.0",
+  "description": "",
+  "main": "recipes.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FilipPFS/les_petits_plats.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FilipPFS/les_petits_plats/issues"
+  },
+  "homepage": "https://github.com/FilipPFS/les_petits_plats#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "eslint": "^9.38.0",
+    "globals": "^16.4.0"
+  }
+}
