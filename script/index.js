@@ -1,5 +1,3 @@
-import { recipes } from "../recipes.js";
-
 const searchInput = document.getElementById("search");
 const resultsDiv = document.getElementById("results");
 
@@ -8,21 +6,86 @@ const appliancesList = document.getElementById("appliances-list");
 const ustensilsList = document.getElementById("ustensils-list");
 
 const tagsContainer = document.getElementById("tags-container");
+const paginationContainer = document.getElementById("pagination");
 
 let selectedTags = [];
 
-// fonction qui affiche les recettes
-function displayRecipes(recipesToShow, query = "") {
+// Fetch recipes function
+const fetchRecipes = async (page = 1, limit = 5, query = "", tags = {}) => {
+  try {
+    let url = `http://localhost/petit_plats_api/api/recipes/test.php?page=${page}&limit=${limit}`;
+
+    if (query.trim() !== "") url += `&query=${encodeURIComponent(query)}`;
+
+    if (tags.ingredient?.length) {
+      tags.ingredient.forEach((ing) => {
+        url += `&ingredient[]=${encodeURIComponent(ing)}`;
+      });
+    }
+
+    if (tags.appliance?.length) {
+      tags.appliance.forEach((app) => {
+        url += `&appliance[]=${encodeURIComponent(app)}`;
+      });
+    }
+
+    if (tags.ustensil?.length) {
+      tags.ustensil.forEach((u) => {
+        url += `&ustensil[]=${encodeURIComponent(u)}`;
+      });
+    }
+
+    console.log("FETCH:", url);
+
+    const res = await axios.get(url);
+    return res.data; // return full API response
+  } catch (error) {
+    console.error("API ERROR:", error);
+    return { data: [], page: 1, total_pages: 1 };
+  }
+};
+
+function getSelectedTagsObject() {
+  return {
+    ingredient: selectedTags
+      .filter((t) => t.type === "ingredient")
+      .map((t) => t.value),
+    appliance: selectedTags
+      .filter((t) => t.type === "appliance")
+      .map((t) => t.value),
+    ustensil: selectedTags
+      .filter((t) => t.type === "ustensil")
+      .map((t) => t.value),
+  };
+}
+
+// Loading recipes
+async function loadPage(page, query, tags) {
+  const response = await fetchRecipes(page, 5, query, tags);
+
+  displayRecipes(response.data, query);
+  updateAdvancedFilters(response.data);
+  displayPagination(response.page, response.total_pages, query, tags);
+}
+
+// Initial Load Function
+async function loadRecipes() {
+  await loadPage(1, "", getSelectedTagsObject());
+}
+
+// Display recipes
+function displayRecipes(recipes, query = "") {
   resultsDiv.innerHTML = "";
 
-  if (recipesToShow.length === 0) {
-    resultsDiv.innerHTML = `<p>Aucune recette ne contient « ${query} », vous pouvez chercher « tarte aux pommes », « poisson », etc.</p>`;
+  if (!recipes.length) {
+    resultsDiv.innerHTML = `<p>Aucune recette ne contient « ${query} ».</p>`;
     return;
   }
 
-  recipesToShow.slice(0, 10).forEach((recipe) => {
+  recipes.forEach((recipe) => {
     const div = document.createElement("div");
     div.className = "recipe-card";
+
     div.innerHTML = `
       <div class="recipe-img">
         <img src="/JSON recipes/${recipe.image}" alt="${recipe.name}" />
@@ -42,13 +105,11 @@ function displayRecipes(recipesToShow, query = "") {
           ${recipe.ingredients
             .map(
               (ing) => `
-              <div>
-                <strong>${ing.ingredient}</strong>
-                <span>${ing.quantity ? ing.quantity : ""} ${
-                ing.unit ? ing.unit : ""
-              }</span>
-              </div>
-            `
+                <div>
+                  <strong>${ing.ingredient}</strong>
+                  <span>${ing.quantity || ""} ${ing.unit || ""}</span>
+                </div>
+              `
             )
             .join("")}
         </div>
@@ -58,25 +119,21 @@ function displayRecipes(recipesToShow, query = "") {
   });
 }
 
-// Liste des filtres avancés
+// Advanced filters
 function updateAdvancedFilters(recipesList) {
-  const ingredientsSet = new Set();
-  const appliancesSet = new Set();
-  const ustensilsSet = new Set();
+  const ingredients = new Set();
+  const appliances = new Set();
+  const ustensils = new Set();
 
-  recipesList.forEach((recipe) => {
-    recipe.ingredients.forEach((ing) => ingredientsSet.add(ing.ingredient));
-    appliancesSet.add(recipe.appliance);
-    recipe.ustensils.forEach((u) => ustensilsSet.add(u));
+  recipesList.forEach((r) => {
+    r.ingredients.forEach((i) => ingredients.add(i.ingredient));
+    appliances.add(r.appliance);
+    r.ustensils.forEach((u) => ustensils.add(u));
   });
 
-  displayFilterOptions(
-    "ingredient",
-    Array.from(ingredientsSet),
-    ingredientsList
-  );
-  displayFilterOptions("appliance", Array.from(appliancesSet), appliancesList);
-  displayFilterOptions("ustensil", Array.from(ustensilsSet), ustensilsList);
+  displayFilterOptions("ingredient", [...ingredients], ingredientsList);
+  displayFilterOptions("appliance", [...appliances], appliancesList);
+  displayFilterOptions("ustensil", [...ustensils], ustensilsList);
 }
 
 function displayFilterOptions(type, list, container) {
@@ -85,24 +142,20 @@ function displayFilterOptions(type, list, container) {
     .join("");
 }
 
+// Tag system
 function wireFilterList(container, type) {
   container.addEventListener("click", (e) => {
     const li = e.target.closest(".filter-option");
-    if (!li || !container.contains(li)) return;
+    if (!li) return;
 
     addTag(li.textContent.trim(), type);
 
     const filterEl = container.closest(".filter");
     if (filterEl) {
       filterEl.classList.remove("open");
-
       const searchField = filterEl.querySelector(".filter-search");
-      if (searchField) {
-        searchField.value = "";
-      }
-      filterEl
-        .querySelectorAll(".filter-list li")
-        .forEach((li) => (li.style.display = ""));
+      if (searchField) searchField.value = "";
+      filterEl.querySelectorAll("li").forEach((li) => (li.style.display = ""));
     }
   });
 }
@@ -114,117 +167,128 @@ wireFilterList(ustensilsList, "ustensil");
 function addTag(value, type) {
   value = value.toLowerCase();
 
-  if (!selectedTags.find((t) => t.value === value)) {
+  if (!selectedTags.some((t) => t.value === value && t.type === type)) {
     selectedTags.push({ value, type });
     displayTags();
     filterWithTags();
   }
 }
 
-function displayTags() {
-  tagsContainer.innerHTML = selectedTags
-    .map(
-      (t) => `
-      <div class="tag ${t.type}">
-     <p>${t.value}</p>
-        <button class="remove-tag" data-value="${t.value}"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M11.0833 11.0833L6.08331 6.08334M6.08331 6.08334L1.08331 1.08334M6.08331 6.08334L11.0833 1.08334M6.08331 6.08334L1.08331 11.0833" stroke="#1B1B1B" stroke-width="2.16667" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        </button>
-      </div>`
-    )
-    .join("");
-
-  document.querySelectorAll(".remove-tag").forEach((btn) => {
-    btn.addEventListener("click", () => removeTag(btn.dataset.value));
-  });
-}
-
-function removeTag(value) {
-  selectedTags = selectedTags.filter((t) => t.value !== value);
+function removeTag(value, type) {
+  selectedTags = selectedTags.filter(
+    (t) => !(t.value === value && t.type === type)
+  );
   displayTags();
   filterWithTags();
 }
 
-// Système de filtrage complet
-let queryTimeout;
-function filterWithTags() {
-  let filtered = [...recipes];
+function displayTags() {
+  tagsContainer.innerHTML = selectedTags
+    .map(
+      (t) => `
+        <div class="tag ${t.type}">
+          <p>${t.value}</p>
+          <button class="remove-tag" data-value="${t.value}" data-type="${t.type}">x</button>
+        </div>`
+    )
+    .join("");
 
-  // --- Filtrage par tags (immédiat)
-  if (selectedTags.length > 0) {
-    selectedTags.forEach((tag) => {
-      if (tag.type === "ingredient") {
-        filtered = filtered.filter((r) =>
-          r.ingredients.some(
-            (i) => i.ingredient.toLowerCase() === tag.value.toLowerCase()
-          )
-        );
-      } else if (tag.type === "appliance") {
-        filtered = filtered.filter(
-          (r) => r.appliance.toLowerCase() === tag.value.toLowerCase()
-        );
-      } else if (tag.type === "ustensil") {
-        filtered = filtered.filter((r) =>
-          r.ustensils
-            .map((u) => u.toLowerCase())
-            .includes(tag.value.toLowerCase())
-        );
-      }
-    });
-  }
-
-  // Filtrage par champ principal (avec délai)
-  clearTimeout(queryTimeout);
-  queryTimeout = setTimeout(() => {
-    const query = searchInput.value.trim().toLowerCase();
-    let filteredQuery = [...filtered];
-
-    if (query.length >= 3) {
-      filteredQuery = filteredQuery.filter(
-        (r) =>
-          r.name.toLowerCase().includes(query) ||
-          r.description.toLowerCase().includes(query) ||
-          r.ingredients.some((i) => i.ingredient.toLowerCase().includes(query))
-      );
-    }
-
-    displayRecipes(filteredQuery, query);
-    updateAdvancedFilters(filteredQuery);
-  }, 500); // délai (en millisecondes)
+  document.querySelectorAll(".remove-tag").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      removeTag(btn.dataset.value, btn.dataset.type)
+    );
+  });
 }
 
-// recherche principale
-searchInput.addEventListener("input", () => {
-  filterWithTags();
-});
+// Filter (search + tags)
+let queryTimeout;
 
-// dropdown menus
+async function filterWithTags() {
+  clearTimeout(queryTimeout);
+
+  queryTimeout = setTimeout(async () => {
+    const query = searchInput.value.trim().toLowerCase();
+    const tags = getSelectedTagsObject();
+
+    console.log("TAGS", tags);
+
+    const response = await fetchRecipes(1, 5, query, tags);
+
+    displayRecipes(response.data, query);
+    updateAdvancedFilters(response.data);
+    displayPagination(response.page, response.total_pages, query, tags);
+  }, 300);
+}
+
+searchInput.addEventListener("input", filterWithTags);
+
+// =============================================================
+// PAGINATION
+// =============================================================
+function displayPagination(currentPage, totalPages, query, tags) {
+  paginationContainer.innerHTML = "";
+
+  // previous
+  if (currentPage > 1) {
+    const prev = document.createElement("button");
+    prev.classList = "btn-page";
+    prev.textContent = "«";
+    prev.addEventListener("click", () =>
+      loadPage(currentPage - 1, query, tags)
+    );
+    paginationContainer.appendChild(prev);
+  }
+
+  // pages
+  for (let p = 1; p <= totalPages; p++) {
+    const btn = document.createElement("button");
+    btn.textContent = p;
+    btn.classList = "btn-page";
+
+    if (p === currentPage) btn.classList.add("active");
+
+    btn.addEventListener("click", () => loadPage(p, query, tags));
+    paginationContainer.appendChild(btn);
+  }
+
+  // next
+  if (currentPage < totalPages) {
+    const next = document.createElement("button");
+    next.classList = "btn-page";
+    next.textContent = "»";
+    next.addEventListener("click", () =>
+      loadPage(currentPage + 1, query, tags)
+    );
+    paginationContainer.appendChild(next);
+  }
+}
+
+// =============================================================
+// DROPDOWNS
+// =============================================================
 document.querySelectorAll(".filter-toggle").forEach((btn) => {
   btn.addEventListener("click", () => {
     const parent = btn.closest(".filter");
     parent.classList.toggle("open");
 
-    // Ferme les autres filtres
     document.querySelectorAll(".filter").forEach((f) => {
       if (f !== parent) f.classList.remove("open");
     });
   });
 });
 
-// recherche dans la liste des filtres
+// search in filter list
 document.querySelectorAll(".filter-search").forEach((input) => {
   input.addEventListener("input", (e) => {
     const value = e.target.value.toLowerCase().trim();
-    const list = e.target.nextElementSibling; // ul juste après
-
+    const list = e.target.nextElementSibling;
     list.querySelectorAll("li").forEach((li) => {
-      const text = li.textContent.toLowerCase();
-      li.style.display = text.includes(value) ? "block" : "none";
+      li.style.display = li.textContent.toLowerCase().includes(value)
+        ? "block"
+        : "none";
     });
   });
 });
 
-// intialisation
-displayRecipes(recipes);
-updateAdvancedFilters(recipes);
+// START
+loadRecipes();
