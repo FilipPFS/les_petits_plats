@@ -7,8 +7,14 @@ const ustensilsList = document.getElementById("ustensils-list");
 
 const tagsContainer = document.getElementById("tags-container");
 const paginationContainer = document.getElementById("pagination");
+const loader = document.getElementById("infinite-loader");
 
 let selectedTags = [];
+
+// Infinite scroll state
+let currentPage = 1;
+let totalPages = 1;
+let isLoading = false;
 
 // Fetch recipes function
 const fetchRecipes = async (page = 1, limit = 5, query = "", tags = {}) => {
@@ -35,10 +41,8 @@ const fetchRecipes = async (page = 1, limit = 5, query = "", tags = {}) => {
       });
     }
 
-    console.log("FETCH:", url);
-
     const res = await axios.get(url);
-    return res.data; // return full API response
+    return res.data;
   } catch (error) {
     console.error("API ERROR:", error);
     return { data: [], page: 1, total_pages: 1 };
@@ -61,11 +65,15 @@ function getSelectedTagsObject() {
 
 // Loading recipes
 async function loadPage(page, query, tags) {
-  const response = await fetchRecipes(page, 5, query, tags);
+  const response = await fetchRecipes(page, 3, query, tags);
 
-  displayRecipes(response.data, query);
+  console.log("RESPONSE", response);
+
+  currentPage = response.page;
+  totalPages = response.total_pages;
+
+  displayRecipes(response.data, query, false);
   updateAdvancedFilters(response.data);
-  displayPagination(response.page, response.total_pages, query, tags);
 }
 
 // Initial Load Function
@@ -74,10 +82,12 @@ async function loadRecipes() {
 }
 
 // Display recipes
-function displayRecipes(recipes, query = "") {
-  resultsDiv.innerHTML = "";
+function displayRecipes(recipes, query = "", append = false) {
+  if (!append) {
+    resultsDiv.innerHTML = "";
+  }
 
-  if (!recipes.length) {
+  if (!recipes.length && !append) {
     resultsDiv.innerHTML = `<p>Aucune recette ne contient « ${query} ».</p>`;
     return;
   }
@@ -105,11 +115,11 @@ function displayRecipes(recipes, query = "") {
           ${recipe.ingredients
             .map(
               (ing) => `
-                <div>
-                  <strong>${ing.ingredient}</strong>
-                  <span>${ing.quantity || ""} ${ing.unit || ""}</span>
-                </div>
-              `
+              <div>
+                <strong>${ing.ingredient}</strong>
+                <span>${ing.quantity || ""} ${ing.unit || ""}</span>
+              </div>
+            `
             )
             .join("")}
         </div>
@@ -210,62 +220,21 @@ async function filterWithTags() {
     const query = searchInput.value.trim().toLowerCase();
     const tags = getSelectedTagsObject();
 
-    console.log("TAGS", tags);
+    currentPage = 1;
+    resultsDiv.innerHTML = "";
 
     const response = await fetchRecipes(1, 5, query, tags);
 
-    displayRecipes(response.data, query);
+    displayRecipes(response.data, query, false);
     updateAdvancedFilters(response.data);
-    displayPagination(response.page, response.total_pages, query, tags);
+
+    totalPages = response.total_pages;
   }, 300);
 }
 
 searchInput.addEventListener("input", filterWithTags);
 
-// =============================================================
-// PAGINATION
-// =============================================================
-function displayPagination(currentPage, totalPages, query, tags) {
-  paginationContainer.innerHTML = "";
-
-  // previous
-  if (currentPage > 1) {
-    const prev = document.createElement("button");
-    prev.classList = "btn-page";
-    prev.textContent = "«";
-    prev.addEventListener("click", () =>
-      loadPage(currentPage - 1, query, tags)
-    );
-    paginationContainer.appendChild(prev);
-  }
-
-  // pages
-  for (let p = 1; p <= totalPages; p++) {
-    const btn = document.createElement("button");
-    btn.textContent = p;
-    btn.classList = "btn-page";
-
-    if (p === currentPage) btn.classList.add("active");
-
-    btn.addEventListener("click", () => loadPage(p, query, tags));
-    paginationContainer.appendChild(btn);
-  }
-
-  // next
-  if (currentPage < totalPages) {
-    const next = document.createElement("button");
-    next.classList = "btn-page";
-    next.textContent = "»";
-    next.addEventListener("click", () =>
-      loadPage(currentPage + 1, query, tags)
-    );
-    paginationContainer.appendChild(next);
-  }
-}
-
-// =============================================================
-// DROPDOWNS
-// =============================================================
+// Dropdown toggles
 document.querySelectorAll(".filter-toggle").forEach((btn) => {
   btn.addEventListener("click", () => {
     const parent = btn.closest(".filter");
@@ -292,3 +261,34 @@ document.querySelectorAll(".filter-search").forEach((input) => {
 
 // START
 loadRecipes();
+
+window.addEventListener("scroll", async () => {
+  const reachedBottom =
+    window.innerHeight + document.documentElement.scrollTop + 1 >
+    document.documentElement.scrollHeight;
+
+  console.log("reached bottom", reachedBottom);
+
+  if (reachedBottom && !isLoading && currentPage < totalPages) {
+    isLoading = true;
+    loader.classList.remove("hidden"); // 👈 on affiche le spinner
+
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 600));
+    await minDelay; // Attends au moins 500ms
+
+    try {
+      const query = searchInput.value.trim().toLowerCase();
+      const tags = getSelectedTagsObject();
+      const response = await fetchRecipes(currentPage + 1, 3, query, tags);
+      console.log("scroll response", response);
+      currentPage = response.page;
+      totalPages = response.total_pages;
+      displayRecipes(response.data, query, true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      isLoading = false;
+      loader.classList.add("hidden");
+    }
+  }
+});
